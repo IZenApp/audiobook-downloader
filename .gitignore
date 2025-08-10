@@ -1,0 +1,170 @@
+# 🎧 Audiobook Downloader - Git Ignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ========================================
+# 🔒 ПРИВАТНЫЕ ДАННЫЕ (НЕ ПУБЛИКОВАТЬ)
+# ========================================
+
+# Скачанные аудиофайлы
+downloads/
+!downloads/.gitkeep
+
+# Логи (могут содержать приватную информацию)
+logs/
+!logs/.gitkeep
+
+# Списки книг (приватная информация)
+data/books.txt
+data/adapted_books.txt
+data/original_books_detailed.txt
+data/downloaded_books.txt
+data/custom_books.txt
+data/user_books.txt
+data/personal_*.txt
+
+# Статистика и прогресс
+*.json
+progress/
+stats/
+statistics/
+
+# Временные файлы
+temp/
+tmp/
+*.tmp
+*.backup
+*.bak
+
+# Конфигурации пользователя
+config/settings.json
+config/secrets.json
+config/local_config.py
+config/user_config.py
+config/personal_*.py
+
+# Архив старых файлов (может содержать приватные данные)
+archive/
+OLD_*
+*.old
+
+# Личные заметки и файлы
+notes.txt
+todo.txt
+personal/
+private/
+my_*.txt
+user_*.txt
+
+# История и кэш
+.history/
+.cache/
+cache/
+
+# ========================================
+# 🎵 МЕДИА ФАЙЛЫ
+# ========================================
+
+# Аудио файлы
+*.mp3
+*.mp4
+*.m4a
+*.webm
+*.wav
+*.ogg
+*.flac
+*.aac
+
+# Видео файлы  
+*.avi
+*.mov
+*.wmv
+*.mkv
+
+# ========================================
+# 📊 СТАТИСТИКА И ОТЧЕТЫ
+# ========================================
+
+# Файлы статистики
+*_stats.txt
+*_report.txt
+*_summary.txt
+download_*.txt
+
+# ========================================
+# 🔧 СИСТЕМНЫЕ ФАЙЛЫ
+# ========================================
+
+# Файлы состояния
+*.state
+*.session
+*.pid
+
+# Резервные копии
+*.backup
+*~
