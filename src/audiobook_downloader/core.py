@@ -156,19 +156,37 @@ class AudiobookParser:
     
     def _parse_book_line(self, line: str, category: str) -> Optional[BookInfo]:
         """Парсинг одной строки с книгой"""
-        # Улучшенное регулярное выражение
-        pattern = r'^(\d+)\.\s+([^-]+?)\s*-\s*([^|]+?)(?:\s*\|\s*Чтец:\s*([^(]+?)\s*\((\d{4})\))?$'
+        # Поддержка двух форматов:
+        # 1. Номерованный: "1. Автор - Название | Чтец: Имя (2024)"
+        # 2. Простой: "Автор - Название"
         
-        match = re.match(pattern, line.strip())
-        if not match:
-            logger.warning(f"Не удалось распарсить строку: {line}")
-            return None
+        # Сначала пробуем номерованный формат
+        numbered_pattern = r'^(\d+)\.\s+([^-]+?)\s*-\s*([^|]+?)(?:\s*\|\s*Чтец:\s*([^(]+?)\s*\((\d{4})\))?$'
+        match = re.match(numbered_pattern, line.strip())
         
-        book_id = int(match.group(1))
-        author = match.group(2).strip()
-        title_part = match.group(3).strip()
-        narrator = match.group(4).strip() if match.group(4) else ""
-        year = match.group(5) if match.group(5) else ""
+        if match:
+            # Номерованный формат
+            book_id = int(match.group(1))
+            author = match.group(2).strip()
+            title_part = match.group(3).strip()
+            narrator = match.group(4).strip() if match.group(4) else ""
+            year = match.group(5) if match.group(5) else ""
+        else:
+            # Пробуем простой формат "Автор - Название"
+            simple_pattern = r'^([^-]+?)\s*-\s*(.+)$'
+            simple_match = re.match(simple_pattern, line.strip())
+            
+            if not simple_match:
+                logger.warning(f"Не удалось распарсить строку: {line}")
+                return None
+            
+            # Простой формат - генерируем ID
+            import hashlib
+            book_id = int(hashlib.md5(line.encode()).hexdigest()[:8], 16) % 100000
+            author = simple_match.group(1).strip()
+            title_part = simple_match.group(2).strip()
+            narrator = ""
+            year = ""
         
         # Разделяем название и подзаголовок
         if ':' in title_part:
@@ -277,22 +295,43 @@ class AudiobookDownloader:
         """Создание организованной структуры файлов"""
         category_dir = self._get_category_dir(book.category)
         
-        # Создаем подпапки по авторам
-        author_safe = re.sub(r'[^\w\s-]', '', book.author)
-        author_safe = re.sub(r'[-\s]+', '-', author_safe)
+        # Создаем подпапки по авторам (исправляем русские символы)
+        author_safe = book.author
+        # Заменяем русские символы на латинские
+        cyrillic_to_latin = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+            'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+            'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+            'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+            'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+            'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+            'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+            'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+            'Ф': 'F', 'Х': 'H', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch',
+            'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
+        }
+        
+        # Транслитерация
+        for cyr, lat in cyrillic_to_latin.items():
+            author_safe = author_safe.replace(cyr, lat)
+        
+        # Удаляем небезопасные символы и нормализуем
+        author_safe = re.sub(r'[^\w\s]', '', author_safe)
+        author_safe = re.sub(r'\s+', '_', author_safe.strip())
+        
         author_dir = category_dir / author_safe
-        author_dir.mkdir(exist_ok=True)
+        author_dir.mkdir(parents=True, exist_ok=True)
         
         # Создаем папку для серии (если есть цифры в названии)
         if re.search(r'\d+', book.title):
             series_match = re.search(r'([^0-9]+)', book.title)
             if series_match:
                 series_name = series_match.group(1).strip()
-                series_safe = re.sub(r'[^\w\s-]', '', series_name)
-                series_safe = re.sub(r'[-\s]+', '-', series_safe)
+                series_safe = re.sub(r'[^\w\s]', '', series_name)
+                series_safe = re.sub(r'\s+', '_', series_safe)
                 if len(series_safe) > 3:  # Только если название серии осмысленное
                     series_dir = author_dir / series_safe
-                    series_dir.mkdir(exist_ok=True)
+                    series_dir.mkdir(parents=True, exist_ok=True)
                     return series_dir
         
         return author_dir
@@ -368,15 +407,18 @@ class AudiobookDownloader:
         # Формат: "Автор - Книга 01 - Подзаголовок (Чтец, Год)"
         filename_parts = []
         
-        # Автор
-        author_clean = re.sub(r'[^\w\s-]', '', book.author).strip()
+        # Автор (безопасный для файловой системы)
+        author_clean = re.sub(r'[^\w\s]', '', book.author).strip()
+        author_clean = re.sub(r'\s+', '_', author_clean)
         filename_parts.append(author_clean)
         
         # Название с номером (если есть)
-        title_clean = re.sub(r'[^\w\s\d-]', '', book.title).strip()
+        title_clean = re.sub(r'[^\w\s\d]', '', book.title).strip()
+        title_clean = re.sub(r'\s+', '_', title_clean)
         if book.subtitle:
-            subtitle_clean = re.sub(r'[^\w\s\d-]', '', book.subtitle).strip()
-            title_clean += f" - {subtitle_clean}"
+            subtitle_clean = re.sub(r'[^\w\s\d]', '', book.subtitle).strip()
+            subtitle_clean = re.sub(r'\s+', '_', subtitle_clean)
+            title_clean += f"_{subtitle_clean}"
         filename_parts.append(title_clean)
         
         # Дополнительная информация

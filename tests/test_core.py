@@ -27,11 +27,11 @@ def test_parsing():
             first_book = books[0]
             print(f"📖 Первая книга: {first_book.author} - {first_book.title}")
         
-        return True
+        assert len(books) > 0, "Список книг должен содержать хотя бы одну книгу"
         
     except Exception as e:
         print(f"❌ Ошибка парсинга: {e}")
-        return False
+        assert False, f"Ошибка парсинга: {e}"
 
 def test_dependencies():
     """Тест зависимостей"""
@@ -56,9 +56,9 @@ def test_dependencies():
     if missing:
         print(f"\n📦 Установите недостающие пакеты:")
         print(f"pip install {' '.join(missing)}")
-        return False
+        assert False, f"Отсутствуют модули: {missing}"
     
-    return True
+    assert len(missing) == 0, "Все необходимые модули должны быть установлены"
 
 def main():
     """Главная функция тестирования"""
