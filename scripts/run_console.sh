@@ -23,4 +23,4 @@ else
 fi
 
 # Запуск консольной версии
-python console.py
+python launchers/console.py

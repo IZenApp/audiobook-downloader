@@ -91,10 +91,10 @@ while true; do
     
     case $choice in
         1)
-            run_command "python console.py" "Консольная версия"
+            run_command "python launchers/console.py" "Консольная версия"
             ;;
         2)
-            run_command "python gui_launcher.py" "GUI версия"
+            run_command "python launchers/gui_launcher.py" "GUI версия"
             ;;
         3)
             run_command "python src/utils/simple_downloader_v3.py" "Простая версия v3 (MP3, лучшие имена файлов)"

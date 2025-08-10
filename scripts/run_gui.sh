@@ -23,4 +23,4 @@ else
 fi
 
 # Запуск GUI версии
-python gui_launcher.py
+python launchers/gui_launcher.py

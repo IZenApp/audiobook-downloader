@@ -40,5 +40,5 @@
 ```bash
 cp data/books_example.txt data/books.txt
 # Отредактируйте data/books.txt
-python console.py
+./scripts/run_console.sh
 ```
