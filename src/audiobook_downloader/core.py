@@ -105,8 +105,50 @@ class BookInfo:
     
     @property
     def search_query(self) -> str:
-        """Запрос для поиска"""
-        return f"{self.author} {self.title} аудиокнига"
+        """Умный запрос для поиска с очисткой проблематичных символов"""
+        # Очищаем автора и название от проблематичных символов
+        clean_author = re.sub(r'[«»""„"]', '', self.author)  # Убираем кавычки
+        clean_author = clean_author.replace('—', '').replace('–', '')  # Убираем тире
+        clean_author = re.sub(r'\s+', ' ', clean_author).strip()  # Нормализуем пробелы
+        
+        clean_title = re.sub(r'[«»""„"]', '', self.title)  # Убираем кавычки
+        clean_title = clean_title.replace('—', '').replace('–', '')  # Убираем тире
+        clean_title = re.sub(r'\s+', ' ', clean_title).strip()  # Нормализуем пробелы
+        
+        # Убираем точки из сокращений (А. -> А)
+        clean_author = re.sub(r'(\b[А-ЯЁA-Z])\.', r'\1', clean_author)
+        clean_title = re.sub(r'(\b[А-ЯЁA-Z])\.', r'\1', clean_title)
+        
+        return f"{clean_author} {clean_title} аудиокнига"
+    
+    @property 
+    def alternative_search_queries(self) -> list[str]:
+        """Альтернативные поисковые запросы для сложных случаев"""
+        queries = []
+        
+        # Основной запрос
+        queries.append(self.search_query)
+        
+        # Запрос только по автору
+        clean_author = re.sub(r'[«»""„"\.]', '', self.author)
+        clean_author = clean_author.replace('—', '').replace('–', '')
+        clean_author = re.sub(r'\s+', ' ', clean_author).strip()
+        queries.append(f"{clean_author} аудиокнига")
+        
+        # Запрос без номеров серий
+        title_no_numbers = re.sub(r'\b\d+\b', '', self.title).strip()
+        if title_no_numbers and title_no_numbers != self.title:
+            clean_title = re.sub(r'[«»""„"\.]', '', title_no_numbers)
+            clean_title = clean_title.replace('—', '').replace('–', '')
+            clean_title = re.sub(r'\s+', ' ', clean_title).strip()
+            queries.append(f"{clean_author} {clean_title} аудиокнига")
+        
+        # Запрос с "полная версия"
+        clean_title_full = re.sub(r'[«»""„"\.]', '', self.title)
+        clean_title_full = clean_title_full.replace('—', '').replace('–', '')
+        queries.append(f"{clean_author} {clean_title_full} полная версия")
+        
+        return list(set(queries))  # Убираем дубликаты
     
     @property
     def filename(self) -> str:
@@ -349,31 +391,68 @@ class AudiobookDownloader:
         return author_dir
     
     def search_youtube(self, book: BookInfo) -> List[str]:
-        """Поиск на YouTube"""
+        """Улучшенный поиск на YouTube с альтернативными запросами"""
         try:
-            search_queries = [
-                f"ytsearch5:{book.search_query} полная версия",
-                f"ytsearch5:{book.author} {book.title} аудиокнига",
-                f"ytsearch3:{book.full_title}"
-            ]
+            # Используем альтернативные поисковые запросы
+            alternative_queries = book.alternative_search_queries
+            search_queries = []
+            
+            # Создаем разнообразные поисковые запросы
+            for query in alternative_queries[:3]:  # Берем первые 3 альтернативы
+                search_queries.extend([
+                    f"ytsearch3:{query}",
+                    f"ytsearch2:{query} полная версия"
+                ])
+            
+            console.print(f"[dim]🔍 Используется {len(search_queries)} поисковых запросов[/dim]")
             
             urls = []
-            for query in search_queries:
+            seen_urls = set()  # Для избежания дубликатов
+            
+            for i, query in enumerate(search_queries):
                 try:
-                    with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+                    console.print(f"[dim]   Запрос {i+1}: {query.split(':')[1][:60]}...[/dim]")
+                    
+                    with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True}) as ydl:
                         search_results = ydl.extract_info(query, download=False)
                         
                         if 'entries' in search_results:
                             for entry in search_results['entries']:
                                 if entry and 'webpage_url' in entry:
+                                    url = entry['webpage_url']
+                                    
+                                    # Избегаем дубликатов
+                                    if url in seen_urls:
+                                        continue
+                                    seen_urls.add(url)
+                                    
                                     duration = entry.get('duration', 0)
-                                    # Фильтруем слишком короткие видео (меньше 30 минут)
-                                    if duration > 1800:  
-                                        urls.append(entry['webpage_url'])
-                except:
+                                    title = entry.get('title', '').lower()
+                                    
+                                    # Фильтрация по длительности (больше 30 минут)
+                                    if duration > 1800:
+                                        # Дополнительная проверка релевантности
+                                        author_words = book.author.lower().split()
+                                        title_words = book.title.lower().split()
+                                        
+                                        # Проверяем, есть ли слова автора или названия в заголовке видео
+                                        relevant_words = 0
+                                        for word in author_words + title_words:
+                                            if len(word) > 3 and word in title:
+                                                relevant_words += 1
+                                        
+                                        if relevant_words >= 1 or 'аудиокнига' in title:
+                                            urls.append(url)
+                                            console.print(f"[green]   ✅ Найдено: {entry.get('title', '')[:50]}... ({duration//60}мин)[/green]")
+                                            
+                                            # Ограничиваем количество результатов
+                                            if len(urls) >= 5:
+                                                return urls
+                except Exception as e:
+                    console.print(f"[dim]   ⚠️ Ошибка запроса: {str(e)[:50]}...[/dim]")
                     continue
             
-            return list(set(urls))  # Убираем дубликаты
+            return urls
             
         except Exception as e:
             logger.error(f"Ошибка поиска на YouTube: {e}")
