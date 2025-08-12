@@ -81,12 +81,21 @@ class SimpleDownloader:
                         current_category = line.replace('##', '').strip()
                         continue
                     
-                    # Парсим книгу
-                    if ' - ' in line:
-                        parts = line.split(' - ', 1)
+                    # Парсим книгу - поддержка разных типов тире
+                    # Нормализуем тире (заменяем длинное тире на обычное)
+                    normalized_line = line.replace('—', ' - ').replace('–', ' - ')
+                    
+                    if ' - ' in normalized_line:
+                        parts = normalized_line.split(' - ', 1)
                         if len(parts) == 2:
                             author = parts[0].strip()
                             title = parts[1].strip()
+                            
+                            # Обрабатываем запятые в названиях (формат "Серия N, Подзаголовок")
+                            if ',' in title:
+                                title_parts = title.split(',', 1)
+                                title = f"{title_parts[0].strip()}: {title_parts[1].strip()}"
+                            
                             books.append(Book(author=author, title=title, category=current_category))
                     
         except FileNotFoundError:
