@@ -156,13 +156,18 @@ class AudiobookParser:
     
     def _parse_book_line(self, line: str, category: str) -> Optional[BookInfo]:
         """Парсинг одной строки с книгой"""
-        # Поддержка двух форматов:
+        # Поддержка нескольких форматов:
         # 1. Номерованный: "1. Автор - Название | Чтец: Имя (2024)"
-        # 2. Простой: "Автор - Название"
+        # 2. Простой с обычным тире: "Автор - Название"
+        # 3. Простой с длинным тире: "Автор — Название"
+        # 4. С запятой и подзаголовком: "Автор — Название серии N, Подзаголовок"
         
-        # Сначала пробуем номерованный формат
+        # Сначала нормализуем тире (заменяем длинное тире на обычное)
+        normalized_line = line.replace('—', '-').replace('–', '-')
+        
+        # Пробуем номерованный формат
         numbered_pattern = r'^(\d+)\.\s+([^-]+?)\s*-\s*([^|]+?)(?:\s*\|\s*Чтец:\s*([^(]+?)\s*\((\d{4})\))?$'
-        match = re.match(numbered_pattern, line.strip())
+        match = re.match(numbered_pattern, normalized_line.strip())
         
         if match:
             # Номерованный формат
@@ -174,7 +179,7 @@ class AudiobookParser:
         else:
             # Пробуем простой формат "Автор - Название"
             simple_pattern = r'^([^-]+?)\s*-\s*(.+)$'
-            simple_match = re.match(simple_pattern, line.strip())
+            simple_match = re.match(simple_pattern, normalized_line.strip())
             
             if not simple_match:
                 logger.warning(f"Не удалось распарсить строку: {line}")
@@ -189,7 +194,14 @@ class AudiobookParser:
             year = ""
         
         # Разделяем название и подзаголовок
-        if ':' in title_part:
+        # Если есть запятая, то разделяем по ней (для формата "Серия N, Подзаголовок")
+        if ',' in title_part:
+            # Разделяем по первой запятой
+            parts = title_part.split(',', 1)
+            title = parts[0].strip()
+            subtitle = parts[1].strip()
+        elif ':' in title_part:
+            # Разделяем по двоеточию
             title, subtitle = title_part.split(':', 1)
             title = title.strip()
             subtitle = subtitle.strip()
