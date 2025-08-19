@@ -101,11 +101,35 @@ audiobook-downloader/
 ├── 📄 README.md               # Документация
 ├── 📄 requirements.txt        # Зависимости
 │
-├── 📁 launchers/              # Лаунчеры
+├── 📁 config/                 # Конфигурация
+├── 📁 data/                   # Списки книг, примеры
+│   ├── books_example.txt      # Пример списка книг
+│   └── README.md
+├── 📁 docs/                   # Документация и гайды
+│   ├── USER_GUIDE.md
+│   ├── TROUBLESHOOTING.md
+│   └── LICENSE
+├── 📁 downloads/              # Скачанные аудиокниги
+│   └── mp3_audiobooks/
+├── 📁 launchers/              # Лаунчеры (альтернативные)
 │   ├── console.py             # Консольный лаунчер
 │   └── gui_launcher.py        # GUI лаунчер
-│
+├── 📁 logs/                   # Логи работы
+│   └── audiobook_downloader.log
+├── 📁 scripts/                # Скрипты запуска и установки
+│   ├── launcher.sh            # Главное меню
+│   ├── run_console.sh         # Быстрый запуск консоли
+│   ├── run_gui.sh             # Быстрый запуск GUI
+│   └── install.sh             # Установка зависимостей
 ├── 📁 src/                    # Исходный код
+│   ├── audiobook_downloader/  # Основная логика
+│   ├── config/                # Конфиг загрузчика
+│   ├── gui/                   # GUI приложение
+│   ├── launchers/             # Лаунчеры
+│   └── utils/                 # Утилиты (YouTube, статистика и пр.)
+├── 📁 tests/                  # Тесты
+│   ├── test_core.py
+│   └── test_parser.py
 ```
 
 ## 💾 Результат работы
