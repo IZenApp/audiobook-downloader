@@ -4,8 +4,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform: Cross-Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/YOUR_USERNAME/audiobook-downloader)
 
-> 🔥 **Мощный инструмент для автоматического поиска и скачивания аудиокниг с YouTube в MP3 формате**
-
 ## ✨ Особенности
 
 - 🎵 **MP3 конвертация** - Высокое качество 192 kbps
